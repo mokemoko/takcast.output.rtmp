@@ -131,6 +131,9 @@ export var setting = (rtmp:Rtmp) => {
                   (() => {
                     var codec:{[any:string]:any} = codecsInfo.video[this.state.videoCodec];
                     var components = [];
+                    if(!codec) {
+                      return <div/>;
+                    }
                     Object.keys(codec).forEach((key) => {
                       if(codec[key]["type"] != undefined) {
                         components.push({key:key, value:codec[key]}); 
@@ -200,6 +203,9 @@ export var setting = (rtmp:Rtmp) => {
                   (() => {
                     var codec:{[any:string]:any} = codecsInfo.audio[this.state.audioCodec];
                     var components = [];
+                    if(!codec) {
+                      return <div/>;
+                    }
                     Object.keys(codec).forEach((key) => {
                       if(codec[key]["type"] != undefined) {
                         components.push({key:key, value:codec[key]}); 

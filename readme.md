@@ -98,3 +98,9 @@ height: 240 縦幅、h264Encoderの場合必須
 
 追加、変更したい場合は
 src/render/ui/setting.tsxを書き換える感じで
+
+
+# issue
+
+修正すべきところ
+設定がない場合codecが存在しない場合の動作をつくっておかないとlinuxでやばいことになりそう。

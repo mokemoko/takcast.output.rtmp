@@ -20,7 +20,7 @@ var Rtmp = (function () {
         this.audioCodecs = [];
         this.videoCodecs = [];
         // 1.codecListの配列に追加したいものを書いておく
-        this.codecList = ["MacOS", "Windows", "Faac", "Openh264", "X264"]; // windowsはあとで作っておく
+        this.codecList = ["MacOS", "Windows", "Faac", "Openh264", "X264"];
     }
     // 2.追加した名前と同じ名称の関数を準備する
     Rtmp.prototype.MacOS = function (target) {
@@ -74,9 +74,50 @@ var Rtmp = (function () {
         }
     };
     Rtmp.prototype.Windows = function (target) {
+        var _this = this;
         if (!target) {
+            if (ttg.encoder.MSAacEncoder.enabled) {
+                ttg.MsSetup.CoInitialize("multithread");
+                ttg.MsSetup.MFStartup();
+                this.audioCodecs.push({
+                    codec: "Windows",
+                    codecType: "audio",
+                    name: "Windows",
+                    channelNum: 1,
+                    sampleRate: 44100,
+                    bitrate: { type: "number", value: 96000, values: 96000 }
+                });
+            }
+            if (ttg.encoder.MSH264Encoder.enabled) {
+                ttg.encoder.MSH264Encoder.listEncoders(function (err, encoder) {
+                    _this.videoCodecs.push({
+                        codec: "Windows",
+                        codecType: "video",
+                        name: encoder,
+                        semiPlanar: true,
+                        width: 320,
+                        height: 240,
+                        bitrate: { type: "number", value: 600000, values: 600000 }
+                    });
+                    return true;
+                });
+            }
         }
         else {
+            switch (target.codecType) {
+                case "audio":
+                    this.audioCodec = target;
+                    this.aacEncoder = new ttg.encoder.MSAacEncoder(this.audioCodec.sampleRate, this.audioCodec.channelNum, this.audioCodec.bitrate);
+                    break;
+                case "video":
+                    this.videoCodec = target;
+                    this.subType = "semiPlanar";
+                    this.uvStride = target.width;
+                    this.h264Encoder = new ttg.encoder.MSH264Encoder(this.videoCodec.name, this.videoCodec.width, this.videoCodec.height, this.videoCodec.bitrate);
+                    break;
+                default:
+                    break;
+            }
         }
     };
     Rtmp.prototype.Faac = function (target) {

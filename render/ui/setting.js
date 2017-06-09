@@ -133,6 +133,9 @@ exports.setting = function (rtmp) {
                             React.createElement(Col, { smOffset: 1 }, (function () {
                                 var codec = codecsInfo.video[_this.state.videoCodec];
                                 var components = [];
+                                if (!codec) {
+                                    return React.createElement("div", null);
+                                }
                                 Object.keys(codec).forEach(function (key) {
                                     if (codec[key]["type"] != undefined) {
                                         components.push({ key: key, value: codec[key] });
@@ -177,6 +180,9 @@ exports.setting = function (rtmp) {
                             React.createElement(Col, { smOffset: 1 }, (function () {
                                 var codec = codecsInfo.audio[_this.state.audioCodec];
                                 var components = [];
+                                if (!codec) {
+                                    return React.createElement("div", null);
+                                }
                                 Object.keys(codec).forEach(function (key) {
                                     if (codec[key]["type"] != undefined) {
                                         components.push({ key: key, value: codec[key] });
