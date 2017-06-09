@@ -114,14 +114,16 @@ export class Rtmp implements IPlugin {
   }
   private Faac(target) {
     if(!target) {
-      this.audioCodecs.push({
-        codec: "Faac",
-        name: "Faac",
-        type: "low",
-        bitrate: {type: "number", value: 96000, values:96000},
-        sampleRate: 44100,
-        channelNum: 1
-      });
+      if(ttg.encoder.FaacEncoder.enabled) {
+        this.audioCodecs.push({
+          codec: "Faac",
+          name: "Faac",
+          type: "low",
+          bitrate: {type: "number", value: 96000, values:96000},
+          sampleRate: 44100,
+          channelNum: 1
+        });
+      }
     }
     else {
       this.audioCodec = target;
