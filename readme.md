@@ -18,7 +18,7 @@ rtmpとして配信するプラグイン
 takcastのプロジェクトで
 
 ```
-$ npm install taktod/takcast.output.rtmp
+$ npm install taktod/takcast.output.rtmp --save
 $ npm run setup
 ```
 
