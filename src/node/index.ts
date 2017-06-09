@@ -1,0 +1,310 @@
+import {IPlugin} from "takcast.interface";
+
+import {ipcMain} from "electron";
+
+import * as ttg from "ttlibjsgyp2";
+
+export class Rtmp implements IPlugin {
+  public name = "rtmp";
+  public type = "output";
+
+  // コーデック情報収集用
+  private audioCodecs:any[];
+  private videoCodecs:any[];
+  private codecList:string[];
+  // rtmp接続用
+  private nc:ttg.rtmp.NetConnection;
+  private ns:ttg.rtmp.NetStream;
+  // 実際に配信するときに利用するcodec情報
+  private audioCodec:any;
+  private videoCodec:any;
+  // encoder
+  private h264Encoder:any;
+  private aacEncoder:any;
+  // frameデータ(内部で使いまわします)
+  private yuvFrame:ttg.Frame;
+  private pcmFrame:ttg.Frame;
+  // yuvイメージのuvStrideの値
+  private uvStride:number;
+  // yuvイメージのsubType planarかsemiPlanar
+  private subType:string;
+  /**
+   * コンストラクタ
+   */
+  constructor() {
+    this.nc = null;
+    this.ns = null;
+    this.h264Encoder = null;
+    this.aacEncoder = null;
+    this.yuvFrame = null;
+    this.pcmFrame = null;
+    this.uvStride = 0;
+    this.subType = "planar";
+    this.audioCodecs = [];
+    this.videoCodecs = [];
+    // 1.codecListの配列に追加したいものを書いておく
+    this.codecList = ["MacOS","Windows","Faac","Openh264","X264"]; // windowsはあとで作っておく
+  }
+  // 2.追加した名前と同じ名称の関数を準備する
+  private MacOS(target) {
+    // 3.targetの設定があるのは、実際にencoderを作るとき、ない場合は選択候補をつくるとき
+    if(!target) {
+      // 4.外部ライブラリで利用可能で確認して、利用できる場合はaudioCodecsかvideoCodecsにコーデック情報を記録しておく
+      if(ttg.encoder.AudioConverterEncoder.enabled) {
+        this.audioCodecs.push({
+          codec: "MacOS", // codec必須:追加した名前と同じにする
+          codecType: "audio", // 動作タイプ(このcodecでは独自に追加した)
+          name: "MacOS", // 選択ダイアログでの名前(なんでもいいがMacOSにした)
+          channelNum: 1, // channelNumとsampleRateは音声側では必須項目
+          sampleRate: 44100, // audioContextの状態に従って設定が変更されます
+          type: "aac", // 以下は初期化に必要な設定項目
+          bitrate: {type: "number", value: 96000, values:96000} // jsonになっているものは、ダイアログで選択可能になるもの
+        });
+      }
+      if(ttg.encoder.VtCompressSessionEncoder.enabled) {
+        this.videoCodecs.push({
+          codec: "MacOS",
+          codecType: "video",
+          name: "MacOS",
+          semiPlanar: false, // 映像側ではsemiPlanarである必要があるかのフラグ
+          width: 320, // widthとheightが必須項目
+          height: 240,
+          fps: 15,
+          bitrate: {type: "number", value: 600000, values: 600000}, // 文字入力で値をいれてもらう場合
+          isbaseline: {type: "checkbox", value: 1, values: 1} // チェックボックスでon offしtrue falseを設定する場合
+        });
+      }
+    }
+    else {
+      // 実際にtargetの内容がある場合はその設定でencoderを作る必要があるときの動作
+      switch(target.codecType) {
+      case "audio":
+        // codec情報を登録するのは必須
+        this.audioCodec = target;
+        this.aacEncoder = new ttg.encoder.AudioConverterEncoder(
+          "aac",
+          this.audioCodec.sampleRate,
+          this.audioCodec.channelNum,
+          parseInt(this.audioCodec.bitrate));
+        break;
+      case "video":
+        // 映像側はcodec情報を設定するのと、入力に利用するyuvデータのsubType(planarかsemiPlanar)とuvStride値の設定が必要
+        this.videoCodec = target;
+        this.subType = "planar";
+        this.uvStride = target.width / 2;
+        // あとはencoderを作ればよい
+        this.h264Encoder = new ttg.encoder.VtCompressSessionEncoder(
+          "h264",
+          this.videoCodec.width,
+          this.videoCodec.height,
+          this.videoCodec.fps,
+          this.videoCodec.bitrate,
+          this.videoCodec.isbaseline);
+        break;
+      default:
+        break;
+      }
+    }
+  }
+  private Windows(target) {
+    if(!target) {
+    }
+    else {
+    }
+  }
+  private Faac(target) {
+    if(!target) {
+      this.audioCodecs.push({
+        codec: "Faac",
+        name: "Faac",
+        type: "low",
+        bitrate: {type: "number", value: 96000, values:96000},
+        sampleRate: 44100,
+        channelNum: 1
+      });
+    }
+    else {
+      this.audioCodec = target;
+      this.aacEncoder = new ttg.encoder.FaacEncoder(
+        this.audioCodec.type,
+        this.audioCodec.sampleRate,
+        this.audioCodec.channelNum,
+        this.audioCodec.bitrate);
+    }
+  }
+  private Openh264(target) {
+    if(!target) {
+      if(ttg.encoder.Openh264Encoder.enabled) {
+        this.videoCodecs.push({
+          codec: "Openh264",
+          name: "Openh264",
+          semiPlanar: false,
+          width: 320,
+          height: 240,
+          param: {type: "textarea", value: "", values: ""},
+          spatialParamArray: {type: "textarea", value: "", values: ""}
+        });
+      }
+    }
+    else {
+      this.videoCodec = target;
+      this.subType = "planar";
+      this.uvStride = target.width / 2;
+      this.h264Encoder = new ttg.encoder.Openh264Encoder(
+        this.videoCodec.width,
+        this.videoCodec.height,
+        {},
+        [{}]);
+    }
+  }
+  private X264(target) {
+    if(!target) {
+      if(ttg.encoder.X264Encoder.enabled) {
+        this.videoCodecs.push({
+          codec:"X264",
+          name: "X264",
+          width: 320,
+          height: 240,
+          preset: {type: "select", value: "veryfast", values: ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow", "placebo"]},
+          tune: {type: "select", value: "zerolatency", values: ["film", "animation", "grain", "stillimage", "psnr", "ssim", "fastdecode", "zerolatency"]},
+          profile: {type: "select", value: "baseline", values: ["baseline", "main", "high"]},
+//          profile: {type: "text", value: "baseline", values: ["baseline", "main", "high", "high10", "high422", "high444"]},
+          semiPlanar: false,
+          params: {type: "textarea", value: "", values: ""}
+        });
+      }
+    }
+    else {
+      this.videoCodec = target;
+      this.subType = "planar";
+      this.uvStride = target.width / 2;
+      this.h264Encoder = new ttg.encoder.X264Encoder(
+        this.videoCodec.width,
+        this.videoCodec.height,
+        this.videoCodec.preset,
+        this.videoCodec.tune,
+        this.videoCodec.profile,
+        {});
+    }
+  }
+  /**
+   * 他のプラグイン読み込み完了時にcallされるplugin設定動作
+   * とりあえず他のプラグインとの連携はない
+   * 全体のプラグインの読み込みが完了したあとにcallされるので初期化動作として使っておく
+   * @param plugins 
+   */
+  public setPlugins(plugins:{[key:string]:Array<IPlugin>}):void {
+    this.codecList.forEach((codec) => {
+      if(this[codec]) {
+        this[codec](null);
+      }
+    });
+    // 初期設定つくっておく必要がある。
+    ipcMain.on(this.name + "init", (event:Electron.IpcMainEvent, args: any) => {
+      // 初期化したときの動作
+      // encoderの情報を送っておく
+      event.sender.send(this.name + "init", {
+        audio: this.audioCodecs,
+        video: this.videoCodecs
+      });
+    });
+    ipcMain.on(this.name + "publish", (event:Electron.IpcMainEvent, args:any) => {
+      // アドレスからrtmpの接続を作成して
+      this._publish(args);
+    });
+    ipcMain.on(this.name + "yuv", (event:Electron.IpcMainEvent, args:any) => {
+      if(this.h264Encoder == null) {
+        return;
+      }
+      if(args[0] instanceof Buffer) {
+        this._yuv(args[0] as Buffer, args[1]);
+      }
+    });
+    ipcMain.on(this.name + "pcm", (event:Electron.IpcMainEvent, args:any) => {
+      if(this.aacEncoder == null) {
+        return;
+      }
+      if(args[0] instanceof Buffer) {
+        this._pcm(args[0] as Buffer, args[1]);
+      }
+    });
+    ipcMain.on(this.name + "stop", (event:Electron.IpcMainEvent, args:any) => {
+      this._stop();
+    });
+  }
+  private _yuv(buffer:Buffer, pts:number) {
+    var frame = ttg.Frame.fromBinaryBuffer(
+      this.yuvFrame, 
+      buffer,
+      {
+        type: "yuv",
+        id: 9,
+        pts: pts,
+        timebase: this.audioCodec.sampleRate,
+        subType: this.subType,
+        width: this.videoCodec.width,
+        height: this.videoCodec.height,
+        yStride: this.videoCodec.width,
+        uStride: this.uvStride,
+        vStride: this.uvStride
+      }
+    );
+    if(frame != null) {
+      this.yuvFrame = frame;
+    }
+    this.h264Encoder.encode(frame, (err, frame) => {
+      frame.id = 9;
+      this.ns.queueFrame(frame);
+      return true;
+    });
+  }
+  private _pcm(buffer:Buffer, pts:number) {
+    var frame = ttg.Frame.fromBinaryBuffer(
+      this.pcmFrame,
+      buffer,
+      {
+        type: "pcmS16",
+        id: 1,
+        pts: pts,
+        timebase: this.audioCodec.sampleRate,
+        sampleRate:this.audioCodec.sampleRate,
+        channelNum:this.audioCodec.channelNum,
+        subType: "littleEndian"
+      }
+    );
+    if(frame != null) {
+      this.pcmFrame = frame;
+    }
+    this.aacEncoder.encode(frame, (err, frame) => {
+      frame.id = 8;
+      this.ns.queueFrame(frame);
+      return true;
+    });
+  }
+  private _publish(args:any) {
+    this.nc = new ttg.rtmp.NetConnection();
+    this.nc.on("onStatusEvent", (event:any) => {
+      if(event.info.code == "NetConnection.Connect.Success") {
+        // netStreamもつくっておく必要がある。
+        this.ns = new ttg.rtmp.NetStream(this.nc);
+        this.ns.on("onStatusEvent", (event) => {
+          // 一応メモっておく
+          console.log(event.info.code);
+          if(event.info.code == "NetStream.Publish.Start") {
+            this[args.audio.codec](args.audio);
+            this[args.video.codec](args.video);
+          }
+        });
+        this.ns.publish(args.streamName);
+      }
+    });
+    this.nc.connect(args.address);
+  }
+  private _stop() {
+    this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
+    this.ns = null;
+    this.nc = null;
+  }
+}
+
+export var _ = new Rtmp();

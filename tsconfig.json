@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "outDir": ".",
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "allowJs": false,
+    "jsx": "react",
+    "declaration": true
+  },
+  "files": [
+    "src/index.ts"
+  ]
+}

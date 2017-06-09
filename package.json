@@ -1,0 +1,24 @@
+{
+  "name": "@takcast/rtmp",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tsbuild": "tsc --project ."
+  },
+  "author": "taktod",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "ttlibjs_next2": "github:taktod/ttLibJs_next2",
+    "ttlibjsgyp2": "github:taktod/ttLibJsGyp2"
+  },
+  "devDependencies": {
+    "@types/electron": "^1.4.38",
+    "@types/node": "^7.0.27",
+    "@types/react": "^15.0.27",
+    "@types/react-bootstrap": "0.0.50",
+    "@types/react-dom": "^15.5.0",
+    "takcast.interface": "github:taktod/takcast.interface",
+    "typescript": "^2.3.4"
+  }
+}
