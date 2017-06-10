@@ -24,9 +24,13 @@ exports.settingComponent = function (rtmp) {
         __extends(SettingComponent, _super);
         function SettingComponent() {
             var _this = _super.call(this) || this;
-            _this.state = { sending: false };
+            _this.state = {
+                sending: false,
+                setting: ""
+            };
             _this._toggleSave = _this._toggleSave.bind(_this);
             _this._openSetting = _this._openSetting.bind(_this);
+            rtmp._setEventTarget(_this);
             return _this;
         }
         SettingComponent.prototype._toggleSave = function () {
@@ -44,6 +48,9 @@ exports.settingComponent = function (rtmp) {
         SettingComponent.prototype._openSetting = function () {
             rtmp._openSetting();
         };
+        SettingComponent.prototype.onUpdate = function (info) {
+            this.setState({ setting: info.address + " " + info.streamName });
+        };
         SettingComponent.prototype.render = function () {
             return (React.createElement("div", null,
                 React.createElement(Navbar.Text, null,
@@ -51,7 +58,7 @@ exports.settingComponent = function (rtmp) {
                         React.createElement("span", { className: "glyphicon glyphicon-cog", "aria-hidden": "true" })),
                     React.createElement(Button, { active: this.state.sending == true, onClick: this._toggleSave },
                         React.createElement("span", { className: "glyphicon glyphicon-send", "aria-hidden": "true" }))),
-                React.createElement(Navbar.Text, null, "rtmp://rtmptest.com/live test")));
+                React.createElement(Navbar.Text, null, this.state.setting)));
         };
         return SettingComponent;
     }(React.Component));

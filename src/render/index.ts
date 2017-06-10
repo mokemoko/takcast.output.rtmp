@@ -13,6 +13,10 @@ import {setting} from "./ui/setting";
 import * as tt from "ttlibjs_next2";
 var ipcRenderer = electron.ipcRenderer;
 
+export interface RtmpEventListener {
+  onUpdate(info:{address:string, streamName:string, audio:any, video:any});
+}
+
 export class Rtmp implements IOutputPlugin {
   public name = "rtmp";
   public type = "output";
@@ -22,11 +26,13 @@ export class Rtmp implements IOutputPlugin {
 
   private basePlugin:IBasePlugin;
   private codecsInfo:{audio:any[], video:any[]} = null;
-  private targetInfo:{address:string, streamName:string, audio:any, video:any}
+  private targetInfo:{address:string, streamName:string, audio:any, video:any};
 
   private pts:number; // 動作pts
   private timerId:NodeJS.Timer; // 映像データを処理するときに利用するtimerのID、停止時に利用するため、保持しておく
   private scriptNode:ScriptProcessorNode; // AudioNodeからpcmデータを取得する
+
+  private eventTarget:RtmpEventListener;
   /**
    * コンストラクタ
    */
@@ -37,6 +43,10 @@ export class Rtmp implements IOutputPlugin {
     this.targetInfo = null;
     this.timerId = null;
     this.scriptNode = null;
+    this.eventTarget = null;
+  }
+  public _setEventTarget(eventTarget:RtmpEventListener) {
+    this.eventTarget = eventTarget;
   }
   /**
    * プラグイン初期化
@@ -78,6 +88,7 @@ export class Rtmp implements IOutputPlugin {
     // 設定を受け取ったらfooterの部分のアドレス表示を更新しておきたいところ。
     // イベントを通知しないとね。
     this.targetInfo = info;
+    this.eventTarget.onUpdate(info);
   }
   /**
    * 有効になっているmediaPluginが変更になったときの動作

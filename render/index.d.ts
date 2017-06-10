@@ -3,6 +3,14 @@ import * as React from "react";
 import { IPlugin } from "takcast.interface";
 import { IOutputPlugin } from "takcast.interface";
 import { IMediaPlugin } from "takcast.interface";
+export interface RtmpEventListener {
+    onUpdate(info: {
+        address: string;
+        streamName: string;
+        audio: any;
+        video: any;
+    }): any;
+}
 export declare class Rtmp implements IOutputPlugin {
     name: string;
     type: string;
@@ -14,10 +22,12 @@ export declare class Rtmp implements IOutputPlugin {
     private pts;
     private timerId;
     private scriptNode;
+    private eventTarget;
     /**
      * コンストラクタ
      */
     constructor();
+    _setEventTarget(eventTarget: RtmpEventListener): void;
     /**
      * プラグイン初期化
      */

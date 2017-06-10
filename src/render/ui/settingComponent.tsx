@@ -2,6 +2,7 @@ import * as React from "react";
 import * as ReactBootstrap from "react-bootstrap";
 
 import {Rtmp} from "..";
+import {RtmpEventListener} from "..";
 
 var Form = ReactBootstrap.Form;
 var FormGroup = ReactBootstrap.FormGroup;
@@ -13,12 +14,16 @@ import * as electron from "electron";
 var dialog = electron.remote.dialog;
 
 export var settingComponent = (rtmp:Rtmp):any => {
-  return class SettingComponent extends React.Component<{}, {}> {
-    state = {sending:false}
+  return class SettingComponent extends React.Component<{}, {}> implements RtmpEventListener {
+    state = {
+      sending:false,
+      setting:""
+    }
     constructor() {
       super();
       this._toggleSave = this._toggleSave.bind(this);
       this._openSetting = this._openSetting.bind(this);
+      rtmp._setEventTarget(this);
     }
     private _toggleSave() {
       // 本体に通信して、動作開始をトリガーしなければならない。
@@ -35,6 +40,9 @@ export var settingComponent = (rtmp:Rtmp):any => {
     private _openSetting() {
       rtmp._openSetting();
     }
+    public onUpdate(info:{address:string, streamName:string, audio:any, video:any}) {
+      this.setState({setting: info.address + " " + info.streamName});
+    }
     public render() {
       return (
         <div>
@@ -43,8 +51,8 @@ export var settingComponent = (rtmp:Rtmp):any => {
             <Button active={this.state.sending == true} onClick={this._toggleSave}><span className="glyphicon glyphicon-send" aria-hidden="true"></span></Button>
           </Navbar.Text>
           <Navbar.Text>
-            {/* ここにアドレスをいれておくことにする、転送データ量とかはなくていいか・・・ */}
-            rtmp://rtmptest.com/live test
+            {/* 設定をこの部分に反映させるようにしておく */}
+            {this.state.setting}
           </Navbar.Text>
         </div>
       );

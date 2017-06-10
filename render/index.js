@@ -19,7 +19,11 @@ var Rtmp = (function () {
         this.targetInfo = null;
         this.timerId = null;
         this.scriptNode = null;
+        this.eventTarget = null;
     }
+    Rtmp.prototype._setEventTarget = function (eventTarget) {
+        this.eventTarget = eventTarget;
+    };
     /**
      * プラグイン初期化
      */
@@ -61,6 +65,7 @@ var Rtmp = (function () {
         // 設定を受け取ったらfooterの部分のアドレス表示を更新しておきたいところ。
         // イベントを通知しないとね。
         this.targetInfo = info;
+        this.eventTarget.onUpdate(info);
     };
     /**
      * 有効になっているmediaPluginが変更になったときの動作
