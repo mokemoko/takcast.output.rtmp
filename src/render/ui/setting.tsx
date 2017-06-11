@@ -30,6 +30,16 @@ export var setting = (rtmp:Rtmp) => {
     private _changeCodec(item) {
       this.setState({codec: item.target.value});
     }
+    public componentDidMount() {
+      var i = 0;
+      this.props.codecList.forEach((codec) => {
+        if(codec.name == this.props.codec.name
+        && codec.codec == this.props.codec.codec) {
+          this.setState({codec: i});
+        }
+        ++ i;
+      });
+    }
     public getData() {
       if(this.props.codecList.length == 0) {
         return null;

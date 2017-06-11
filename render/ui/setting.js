@@ -39,6 +39,17 @@ exports.setting = function (rtmp) {
         CodecSetting.prototype._changeCodec = function (item) {
             this.setState({ codec: item.target.value });
         };
+        CodecSetting.prototype.componentDidMount = function () {
+            var _this = this;
+            var i = 0;
+            this.props.codecList.forEach(function (codec) {
+                if (codec.name == _this.props.codec.name
+                    && codec.codec == _this.props.codec.codec) {
+                    _this.setState({ codec: i });
+                }
+                ++i;
+            });
+        };
         CodecSetting.prototype.getData = function () {
             var _this = this;
             if (this.props.codecList.length == 0) {
