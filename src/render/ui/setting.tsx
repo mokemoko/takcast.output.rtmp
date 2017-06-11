@@ -31,6 +31,9 @@ export var setting = (rtmp:Rtmp) => {
       this.setState({codec: item.target.value});
     }
     public getData() {
+      if(this.props.codecList.length == 0) {
+        return null;
+      }
       var getData = (target, ref) => {
         switch(target) {
         case "checkbox":

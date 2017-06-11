@@ -24,7 +24,8 @@ var Rtmp = (function () {
         this.audioCodecs = [];
         this.videoCodecs = [];
         // 1.codecListの配列に追加したいものを書いておく
-        this.codecList = ["MacOS", "Windows", "Faac", "Openh264", "X264"];
+        this.codecList = [];
+        //    this.codecList = ["MacOS","Windows","Faac","Openh264","X264"];
     }
     // 2.追加した名前と同じ名称の関数を準備する
     Rtmp.prototype.MacOS = function (target) {

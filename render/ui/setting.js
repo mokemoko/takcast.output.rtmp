@@ -31,9 +31,7 @@ exports.setting = function (rtmp) {
         __extends(CodecSetting, _super);
         function CodecSetting() {
             var _this = _super.call(this) || this;
-            _this.state = {
-                codec: 0
-            };
+            _this.state = { codec: 0 };
             _this._changeCodec = _this._changeCodec.bind(_this);
             _this.targetComponents = [];
             return _this;
@@ -41,8 +39,11 @@ exports.setting = function (rtmp) {
         CodecSetting.prototype._changeCodec = function (item) {
             this.setState({ codec: item.target.value });
         };
-        CodecSetting.prototype._getData = function () {
+        CodecSetting.prototype.getData = function () {
             var _this = this;
+            if (this.props.codecList.length == 0) {
+                return null;
+            }
             var getData = function (target, ref) {
                 switch (target) {
                     case "checkbox":
@@ -55,7 +56,7 @@ exports.setting = function (rtmp) {
                 }
             };
             var codec = {};
-            var targetCodec = this.props.targetCodecs[this.state.codec];
+            var targetCodec = this.props.codecList[this.state.codec];
             Object.keys(targetCodec).forEach(function (key) {
                 if (targetCodec[key]["type"] != undefined) {
                     // これが処理すべきもの
@@ -76,7 +77,7 @@ exports.setting = function (rtmp) {
                     // 本当はカッコ悪いから、関数で実行したいけど
                     // 初期化時のイベントの走らせ方がよくわからないので、とりあえず
                     // タイトルのところに乗せておく
-                    var codec = _this.props.targetCodecs[_this.state.codec];
+                    var codec = _this.props.codecList[_this.state.codec];
                     if (codec) {
                         _this.targetComponents = [];
                         Object.keys(codec).forEach(function (key) {
@@ -87,7 +88,7 @@ exports.setting = function (rtmp) {
                     }
                     return React.createElement(ControlLabel, null, _this.props.title);
                 })(),
-                React.createElement(FormControl, { componentClass: "select", onChange: this._changeCodec }, this.props.targetCodecs.map(function (val, i) {
+                React.createElement(FormControl, { componentClass: "select", onChange: this._changeCodec }, this.props.codecList.map(function (val, i) {
                     if (i == _this.state.codec) {
                         return React.createElement("option", { value: i, key: i, selected: true }, val.name);
                     }
@@ -128,15 +129,9 @@ exports.setting = function (rtmp) {
         __extends(Setting, _super);
         function Setting() {
             var _this = _super.call(this) || this;
-            _this.state = {
-                showDialog: true,
-                audioCodec: 0,
-                videoCodec: 0
-            };
+            _this.state = { showDialog: true };
             _this._close = _this._close.bind(_this);
             _this._confirm = _this._confirm.bind(_this);
-            _this._changeAudioCodec = _this._changeAudioCodec.bind(_this);
-            _this._changeVideoCodec = _this._changeVideoCodec.bind(_this);
             return _this;
         }
         Setting.prototype._close = function () {
@@ -160,24 +155,13 @@ exports.setting = function (rtmp) {
                 alert("接続サーバーが不明です");
                 return;
             }
-            // videoCodecの内容を取得するわけだが・・・
-            // callしたら必要な情報を返してくる・・・ってのでいいか・・・
-            // videoCodecを取得してみる。
             rtmp._setInfo({
                 address: address,
                 streamName: streamName,
-                audio: this.refs.audioCodec._getData(),
-                video: this.refs.videoCodec._getData()
+                audio: this.refs.audioCodec.getData(),
+                video: this.refs.videoCodec.getData()
             });
             this.setState({ showDialog: false });
-        };
-        Setting.prototype._changeAudioCodec = function (item) {
-            // このタイミングでもaudioCodecの内容を更新しなければならないか・・・
-            this.setState({ audioCodec: item.target.value });
-        };
-        Setting.prototype._changeVideoCodec = function (item) {
-            // こっちもこのタイミングでvideoCodecの内容を更新しなければならないか・・・
-            this.setState({ videoCodec: item.target.value });
         };
         Setting.prototype.render = function () {
             return (React.createElement(Modal, { show: this.state.showDialog, onHide: this._close },
@@ -188,8 +172,8 @@ exports.setting = function (rtmp) {
                         React.createElement(FormGroup, null,
                             React.createElement(FormControl, { type: "text", placeholder: "address (rtmp://someRtmpServer.com/live)", ref: "address", defaultValue: targetInfo.address }),
                             React.createElement(FormControl, { type: "text", placeholder: "stream name (stream)", ref: "streamName", defaultValue: targetInfo.streamName })),
-                        React.createElement(CodecSetting, { ref: "videoCodec", title: "Video Codec", targetCodecs: codecsInfo.video }),
-                        React.createElement(CodecSetting, { ref: "audioCodec", title: "Audio Codec", targetCodecs: codecsInfo.audio }))),
+                        React.createElement(CodecSetting, { ref: "videoCodec", title: "Video Codec", codecList: codecsInfo.video, codec: targetInfo.video }),
+                        React.createElement(CodecSetting, { ref: "audioCodec", title: "Audio Codec", codecList: codecsInfo.audio, codec: targetInfo.audio }))),
                 React.createElement(Modal.Footer, null,
                     React.createElement(Button, { onClick: this._confirm },
                         React.createElement("span", { className: "glyphicon glyphicon-wrench", "aria-hidden": "true" })))));

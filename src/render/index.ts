@@ -132,7 +132,12 @@ export class Rtmp implements IOutputPlugin {
       alert("接続先設定がありません。");
       return false;
     }
+
     // 動作mediaを確定する
+    if(this.targetInfo.audio == null || this.targetInfo.video == null) {
+      alert("エンコーダー情報がありません");
+      return false;
+    }
     this.targetMedia = this.activeMedia;
     // canvasを取得してcapture経由でyuvデータを入手する
     var canvas = this.targetMedia.refCanvas();
