@@ -66,7 +66,6 @@ exports.setting = function (rtmp) {
                     codec[key] = targetCodec[key];
                 }
             });
-            console.log(codec);
             return codec;
         };
         CodecSetting.prototype.render = function () {
@@ -96,7 +95,7 @@ exports.setting = function (rtmp) {
                         return React.createElement("option", { value: i, key: i }, val.name);
                     }
                 })),
-                React.createElement(Col, { smOffset: 1 }, this.targetComponents.map(function (val, i) {
+                React.createElement(Col, { smOffset: 1 }, /* あとは要素に従って表示していけばOKだが・・・ */ this.targetComponents.map(function (val, i) {
                     switch (val.value.type) {
                         case "checkbox":
                             return (React.createElement(Checkbox, { defaultChecked: val.value.value, ref: val.key }, val.key));
