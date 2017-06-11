@@ -138,17 +138,6 @@ exports.setting = function (rtmp) {
             this.setState({ showDialog: false });
         };
         Setting.prototype._confirm = function () {
-            var getData = function (target, ref) {
-                switch (target) {
-                    case "checkbox":
-                        return ReactDOM.findDOMNode(ref).getElementsByTagName("input")[0].checked;
-                    case "select":
-                        var r = ReactDOM.findDOMNode(ref);
-                        return r.children[r.value].innerText;
-                    default:
-                        return ReactDOM.findDOMNode(ref).value;
-                }
-            };
             var address = ReactDOM.findDOMNode(this.refs.address).value;
             var streamName = ReactDOM.findDOMNode(this.refs.streamName).value;
             if (!address || !streamName) {

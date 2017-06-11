@@ -55,7 +55,6 @@ export var settingComponent = (rtmp:Rtmp):any => {
             <Button active={this.state.sending == true} onClick={this._toggleSave}><span className="glyphicon glyphicon-send" aria-hidden="true"></span></Button>
           </Navbar.Text>
           <Navbar.Text>
-            {/* 設定をこの部分に反映させるようにしておく */}
             {this.state.setting}
           </Navbar.Text>
         </div>

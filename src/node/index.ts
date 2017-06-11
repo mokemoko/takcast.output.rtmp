@@ -47,8 +47,7 @@ export class Rtmp implements IPlugin {
     this.audioCodecs = [];
     this.videoCodecs = [];
     // 1.codecListの配列に追加したいものを書いておく
-    this.codecList = [];
-//    this.codecList = ["MacOS","Windows","Faac","Openh264","X264"];
+    this.codecList = ["MacOS","Windows","Faac","Openh264","X264"];
   }
   // 2.追加した名前と同じ名称の関数を準備する
   private MacOS(target) {

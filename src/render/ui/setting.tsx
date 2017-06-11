@@ -56,7 +56,6 @@ export var setting = (rtmp:Rtmp) => {
           codec[key] = targetCodec[key];
         }
       });
-      console.log(codec);
       return codec;
     }
     public render() {
@@ -91,8 +90,7 @@ export var setting = (rtmp:Rtmp) => {
             }
           </FormControl>
           <Col smOffset={1}>
-          {/* あとは要素に従って表示していけばOKだが・・・ */}
-            {
+            {/* あとは要素に従って表示していけばOKだが・・・ */
               this.targetComponents.map((val, i) => {
                 switch(val.value.type) {
                 case "checkbox":
@@ -149,17 +147,6 @@ export var setting = (rtmp:Rtmp) => {
       this.setState({showDialog:false});
     }
     public _confirm() {
-      var getData = (target, ref) => {
-        switch(target) {
-        case "checkbox":
-          return ReactDOM.findDOMNode(ref).getElementsByTagName("input")[0].checked;
-        case "select":
-          var r = ReactDOM.findDOMNode(ref) as HTMLSelectElement;
-          return r.children[r.value].innerText;
-        default:
-          return (ReactDOM.findDOMNode(ref) as any).value;
-        }
-      };
       var address = (ReactDOM.findDOMNode(this.refs.address) as HTMLInputElement).value;
       var streamName = (ReactDOM.findDOMNode(this.refs.streamName) as HTMLInputElement).value;
       if(!address || !streamName) {
