@@ -3,7 +3,11 @@ import {IPlugin} from "takcast.interface";
 import {ipcMain} from "electron";
 
 import * as ttg from "ttlibjsgyp2";
+// データを保存するための動作
+import {writeFile} from "fs";
+import {readFileSync} from "fs";
 
+// とりあえずデータとして保存できるようにしておこう。
 export class Rtmp implements IPlugin {
   public name = "rtmp";
   public type = "output";
@@ -252,10 +256,17 @@ export class Rtmp implements IPlugin {
     ipcMain.on(this.name + "init", (event:Electron.IpcMainEvent, args: any) => {
       // 初期化したときの動作
       // encoderの情報を送っておく
-      event.sender.send(this.name + "init", {
+      var publishInfo = null;
+      try {
+        publishInfo = JSON.parse(readFileSync("rtmp.json", "utf8"));
+      }
+      catch(e) {
+      }
+      event.sender.send(this.name + "init", [{
         audio: this.audioCodecs,
         video: this.videoCodecs
-      });
+      },
+      publishInfo]);
     });
     ipcMain.on(this.name + "publish", (event:Electron.IpcMainEvent, args:any) => {
       // アドレスからrtmpの接続を作成して
@@ -331,6 +342,7 @@ export class Rtmp implements IPlugin {
     });
   }
   private _publish(args:any) {
+    writeFile("rtmp.json", JSON.stringify(args), () => {});
     this.nc = new ttg.rtmp.NetConnection();
     this.nc.on("onStatusEvent", (event:any) => {
       if(event.info.code == "NetConnection.Connect.Success") {

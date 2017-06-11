@@ -25,6 +25,8 @@ var Col = ReactBootstrap.Col;
 var Checkbox = ReactBootstrap.Checkbox;
 exports.setting = function (rtmp) {
     var codecsInfo = rtmp._refCodecsInfo();
+    var targetInfo = rtmp._refTargetInfo();
+    // あとはこのtargetInfoからaudioCodecとvideoCodecの情報も復元可能にすれば、OK
     var Setting = (function (_super) {
         __extends(Setting, _super);
         function Setting() {
@@ -118,8 +120,8 @@ exports.setting = function (rtmp) {
                 React.createElement(Modal.Body, null,
                     React.createElement(Form, null,
                         React.createElement(FormGroup, { controlId: "formControlsSelect" },
-                            React.createElement(FormControl, { type: "text", placeholder: "address (rtmp://someRtmpServer.com/live)", ref: "address" }),
-                            React.createElement(FormControl, { type: "text", placeholder: "stream name (stream)", ref: "streamName" })),
+                            React.createElement(FormControl, { type: "text", placeholder: "address (rtmp://someRtmpServer.com/live)", ref: "address", defaultValue: targetInfo.address }),
+                            React.createElement(FormControl, { type: "text", placeholder: "stream name (stream)", ref: "streamName", defaultValue: targetInfo.streamName })),
                         React.createElement(FormGroup, { controlId: "formControlsSelect" },
                             React.createElement(ControlLabel, null, "Video Codec"),
                             React.createElement(FormControl, { componentClass: "select", placeholder: "select", onChange: this._changeVideoCodec }, codecsInfo.video.map(function (val, i) {

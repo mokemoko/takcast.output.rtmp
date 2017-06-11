@@ -2,6 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var electron_1 = require("electron");
 var ttg = require("ttlibjsgyp2");
+// データを保存するための動作
+var fs_1 = require("fs");
+var fs_2 = require("fs");
+// とりあえずデータとして保存できるようにしておこう。
 var Rtmp = (function () {
     /**
      * コンストラクタ
@@ -200,10 +204,17 @@ var Rtmp = (function () {
         electron_1.ipcMain.on(this.name + "init", function (event, args) {
             // 初期化したときの動作
             // encoderの情報を送っておく
-            event.sender.send(_this.name + "init", {
-                audio: _this.audioCodecs,
-                video: _this.videoCodecs
-            });
+            var publishInfo = null;
+            try {
+                publishInfo = JSON.parse(fs_2.readFileSync("rtmp.json", "utf8"));
+            }
+            catch (e) {
+            }
+            event.sender.send(_this.name + "init", [{
+                    audio: _this.audioCodecs,
+                    video: _this.videoCodecs
+                },
+                publishInfo]);
         });
         electron_1.ipcMain.on(this.name + "publish", function (event, args) {
             // アドレスからrtmpの接続を作成して
@@ -274,6 +285,7 @@ var Rtmp = (function () {
     };
     Rtmp.prototype._publish = function (args) {
         var _this = this;
+        fs_1.writeFile("rtmp.json", JSON.stringify(args), function () { });
         this.nc = new ttg.rtmp.NetConnection();
         this.nc.on("onStatusEvent", function (event) {
             if (event.info.code == "NetConnection.Connect.Success") {

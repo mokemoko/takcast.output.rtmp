@@ -45,6 +45,12 @@ export declare class Rtmp implements IOutputPlugin {
         audio: any[];
         video: any[];
     };
+    _refTargetInfo(): {
+        address: string;
+        streamName: string;
+        audio: any;
+        video: any;
+    };
     /**
      * 設定ダイアログを開く
      * rtmpアドレスやコーデック設定等が実施できる

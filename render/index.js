@@ -33,7 +33,19 @@ var Rtmp = (function () {
         this.basePlugin = plugins["base"][0];
         // node側に初期化を送って、codecの情報をもらう
         ipcRenderer.on(this.name + "init", function (e, args) {
-            _this.codecsInfo = args;
+            _this.codecsInfo = args[0];
+            _this.targetInfo = args[1];
+            if (_this.targetInfo == null) {
+                _this.targetInfo = {
+                    address: "",
+                    streamName: "",
+                    audio: null,
+                    video: null
+                };
+            }
+            if (_this.eventTarget != null) {
+                _this.eventTarget.onUpdate(_this.targetInfo);
+            }
         });
         ipcRenderer.send(this.name + "init");
     };
@@ -48,6 +60,9 @@ var Rtmp = (function () {
      */
     Rtmp.prototype._refCodecsInfo = function () {
         return this.codecsInfo;
+    };
+    Rtmp.prototype._refTargetInfo = function () {
+        return this.targetInfo;
     };
     /**
      * 設定ダイアログを開く

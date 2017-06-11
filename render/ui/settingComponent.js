@@ -31,6 +31,10 @@ exports.settingComponent = function (rtmp) {
             _this._toggleSave = _this._toggleSave.bind(_this);
             _this._openSetting = _this._openSetting.bind(_this);
             rtmp._setEventTarget(_this);
+            var targetInfo = rtmp._refTargetInfo();
+            if (targetInfo != null) {
+                _this.onUpdate(targetInfo);
+            }
             return _this;
         }
         SettingComponent.prototype._toggleSave = function () {

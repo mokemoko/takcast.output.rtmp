@@ -24,6 +24,10 @@ export var settingComponent = (rtmp:Rtmp):any => {
       this._toggleSave = this._toggleSave.bind(this);
       this._openSetting = this._openSetting.bind(this);
       rtmp._setEventTarget(this);
+      var targetInfo = rtmp._refTargetInfo();
+      if(targetInfo != null) {
+        this.onUpdate(targetInfo);
+      }
     }
     private _toggleSave() {
       // 本体に通信して、動作開始をトリガーしなければならない。

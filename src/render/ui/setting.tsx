@@ -17,6 +17,8 @@ var Checkbox = ReactBootstrap.Checkbox;
 
 export var setting = (rtmp:Rtmp) => {
   var codecsInfo = rtmp._refCodecsInfo();
+  var targetInfo = rtmp._refTargetInfo();
+  // あとはこのtargetInfoからaudioCodecとvideoCodecの情報も復元可能にすれば、OK
   class Setting extends React.Component<{}, {}> {
     state = {
       showDialog:true,
@@ -108,8 +110,8 @@ export var setting = (rtmp:Rtmp) => {
           <Modal.Body>
             <Form>
             <FormGroup controlId="formControlsSelect">
-              <FormControl type="text" placeholder="address (rtmp://someRtmpServer.com/live)" ref="address"/>
-              <FormControl type="text" placeholder="stream name (stream)" ref="streamName"/>
+              <FormControl type="text" placeholder="address (rtmp://someRtmpServer.com/live)" ref="address" defaultValue={targetInfo.address}/>
+              <FormControl type="text" placeholder="stream name (stream)" ref="streamName" defaultValue={targetInfo.streamName}/>
             </FormGroup>
             <FormGroup controlId="formControlsSelect">
               <ControlLabel>Video Codec</ControlLabel>
