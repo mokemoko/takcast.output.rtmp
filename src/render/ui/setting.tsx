@@ -15,22 +15,132 @@ var Panel = ReactBootstrap.Panel;
 var Col = ReactBootstrap.Col;
 var Checkbox = ReactBootstrap.Checkbox;
 
+// これちょっと調整しないとね・・・ややこしい感じになってる。
 export var setting = (rtmp:Rtmp) => {
   var codecsInfo = rtmp._refCodecsInfo();
   var targetInfo = rtmp._refTargetInfo();
+  class CodecSetting extends React.Component<{title:string,codecList:any[],codec:any}, {}> {
+    state = {codec: 0}
+    private targetComponents:any[];
+    constructor() {
+      super();
+      this._changeCodec = this._changeCodec.bind(this);
+      this.targetComponents = [];
+    }
+    private _changeCodec(item) {
+      this.setState({codec: item.target.value});
+    }
+    public getData() {
+      var getData = (target, ref) => {
+        switch(target) {
+        case "checkbox":
+          return ReactDOM.findDOMNode(ref).getElementsByTagName("input")[0].checked;
+        case "select":
+          var r = ReactDOM.findDOMNode(ref) as HTMLSelectElement;
+          return r.children[r.value].innerText;
+        default:
+          return (ReactDOM.findDOMNode(ref) as any).value;
+        }
+      };
+      var codec = {};
+      var targetCodec = this.props.codecList[this.state.codec];
+      Object.keys(targetCodec).forEach((key) => {
+        if(targetCodec[key]["type"] != undefined) {
+          // これが処理すべきもの
+          codec[key] = getData(targetCodec[key]["type"], this.refs[key]);
+        }
+        else {
+          codec[key] = targetCodec[key];
+        }
+      });
+      console.log(codec);
+      return codec;
+    }
+    public render() {
+      return (
+        <FormGroup>
+          {(()=> {
+            // 適当な場所であらかじめ表示に利用するデータの抽出を実施しておく。
+            // 本当はカッコ悪いから、関数で実行したいけど
+            // 初期化時のイベントの走らせ方がよくわからないので、とりあえず
+            // タイトルのところに乗せておく
+            var codec = this.props.codecList[this.state.codec];
+            if(codec) {
+              this.targetComponents = [];
+              Object.keys(codec).forEach((key) => {
+                if(codec[key]["type"] != undefined) {
+                  this.targetComponents.push({key:key, value:codec[key]}); 
+                }
+              });
+            }
+            return <ControlLabel>{this.props.title}</ControlLabel>
+          })()}
+          <FormControl componentClass="select" onChange={this._changeCodec}>
+            {
+              this.props.codecList.map((val, i) => {
+                if(i == this.state.codec) {
+                  return <option value={i} key={i} selected>{val.name}</option>
+                }
+                else {
+                  return <option value={i} key={i}>{val.name}</option>
+                }
+              })
+            }
+          </FormControl>
+          <Col smOffset={1}>
+          {/* あとは要素に従って表示していけばOKだが・・・ */}
+            {
+              this.targetComponents.map((val, i) => {
+                switch(val.value.type) {
+                case "checkbox":
+                  return (
+                    <Checkbox defaultChecked={val.value.value} ref={val.key}>{val.key}</Checkbox>
+                  );
+                case "select":
+                  return (
+                    <div>
+                      <ControlLabel>{val.key}</ControlLabel>
+                      <FormControl componentClass="select" placeholder="select" ref={val.key}>
+                        {val.value.values.map((item, i) => {
+                          if(item == val.value.value) {
+                            return <option value={i} key={i} selected>{item}</option>
+                          }
+                          else {
+                            return <option value={i} key={i}>{item}</option>
+                          }
+                        })}
+                      </FormControl>
+                    </div>
+                  );
+                case "textarea":
+                  return (
+                    <div>
+                      <ControlLabel>{val.key}</ControlLabel>
+                      <FormControl componentClass="textarea" placeholder={val.key} defaultValue={val.value.value} ref={val.key}/>
+                    </div>
+                  );
+                default:
+                  return (
+                    <div>
+                      <ControlLabel>{val.key}</ControlLabel>
+                      <FormControl type={val.value.type} defaultValue={val.value.value} placeholder={val.key} ref={val.key}/>
+                    </div>
+                  );
+                }
+              })
+            }
+          </Col>
+        </FormGroup>
+      );
+    }
+  }
   // あとはこのtargetInfoからaudioCodecとvideoCodecの情報も復元可能にすれば、OK
   class Setting extends React.Component<{}, {}> {
-    state = {
-      showDialog:true,
-      audioCodec: 0,
-      videoCodec: 0
-    }
+    state = {showDialog:true}
     constructor() {
       super();
       this._close = this._close.bind(this);
       this._confirm = this._confirm.bind(this);
-      this._changeAudioCodec = this._changeAudioCodec.bind(this);
-      this._changeVideoCodec = this._changeVideoCodec.bind(this);
     }
     public _close() {
       this.setState({showDialog:false});
@@ -47,61 +157,21 @@ export var setting = (rtmp:Rtmp) => {
           return (ReactDOM.findDOMNode(ref) as any).value;
         }
       };
-      // 取れてる
-      if(!getData("", this.refs.address)
-      || !getData("", this.refs.streamName)) {
+      var address = (ReactDOM.findDOMNode(this.refs.address) as HTMLInputElement).value;
+      var streamName = (ReactDOM.findDOMNode(this.refs.streamName) as HTMLInputElement).value;
+      if(!address || !streamName) {
         alert("接続サーバーが不明です");
         return;
       }
-      // videoCodecを取得してみる。
-      var videoCodec = {};
-      var targetCodec = codecsInfo.video[this.state.videoCodec];
-      Object.keys(targetCodec).forEach((key) => {
-        if(targetCodec[key]["type"] != undefined) {
-          // これが処理すべきもの
-          videoCodec[key] = getData(targetCodec[key]["type"], this.refs["video_" + key]);
-        }
-        else {
-          videoCodec[key] = targetCodec[key];
-        }
-      });
-      var audioCodec = {};
-      targetCodec = codecsInfo.audio[this.state.audioCodec];
-      Object.keys(targetCodec).forEach((key) => {
-        if(targetCodec[key]["type"] != undefined) {
-          audioCodec[key] = getData(targetCodec[key]["type"], this.refs["audio_" + key]);
-        }
-        else {
-          audioCodec[key] = targetCodec[key];
-        }
-      });
       rtmp._setInfo({
-        address: getData("", this.refs.address),
-        streamName: getData("", this.refs.streamName),
-        audio: audioCodec,
-        video: videoCodec
+        address: address,
+        streamName: streamName,
+        audio: (this.refs.audioCodec as CodecSetting).getData(),
+        video: (this.refs.videoCodec as CodecSetting).getData()
       });
       this.setState({showDialog:false});
     }
-    private _changeAudioCodec(item) {
-      // このタイミングでもaudioCodecの内容を更新しなければならないか・・・
-      this.setState({audioCodec: item.target.value});
-    }
-    private _changeVideoCodec(item) {
-      // こっちもこのタイミングでvideoCodecの内容を更新しなければならないか・・・
-      this.setState({videoCodec: item.target.value});
-    }
     public render() {
-      /*
-      動作としては
-      アドレス設定
-      stream名設定
-      h264 encoder設定
-      aac encoder設定
-      このあたりが必要になる。
-      閉じたら動作開始みたいな感じで
-            <FormControl type="text" placeholder="rtmp server"/>
-      */
       return (
         <Modal show={this.state.showDialog} onHide={this._close}>
           <Modal.Header closeButton>
@@ -109,155 +179,12 @@ export var setting = (rtmp:Rtmp) => {
           </Modal.Header>
           <Modal.Body>
             <Form>
-            <FormGroup controlId="formControlsSelect">
+            <FormGroup>
               <FormControl type="text" placeholder="address (rtmp://someRtmpServer.com/live)" ref="address" defaultValue={targetInfo.address}/>
               <FormControl type="text" placeholder="stream name (stream)" ref="streamName" defaultValue={targetInfo.streamName}/>
             </FormGroup>
-            <FormGroup controlId="formControlsSelect">
-              <ControlLabel>Video Codec</ControlLabel>
-              <FormControl componentClass="select" placeholder="select" onChange={this._changeVideoCodec}>
-              {
-                codecsInfo.video.map((val, i) => {
-                  if(i == this.state.videoCodec) {
-                    return <option value={i} key={i} selected>{val.name}</option>
-                  }
-                  else {
-                    return <option value={i} key={i}>{val.name}</option>
-                  }
-                })
-              }
-              </FormControl>
-              <Col smOffset={1}>
-                {/* この部分はcodecの内容に従ってつくっておく。 */}
-                {
-                  (() => {
-                    var codec:{[any:string]:any} = codecsInfo.video[this.state.videoCodec];
-                    var components = [];
-                    if(!codec) {
-                      return <div/>;
-                    }
-                    Object.keys(codec).forEach((key) => {
-                      if(codec[key]["type"] != undefined) {
-                        components.push({key:key, value:codec[key]}); 
-                      }
-                    });
-                    return (
-                      <div>
-                        {components.map((val, i) => {
-                          switch(val.value.type) {
-                          case "checkbox":
-                            return (
-                              <Checkbox defaultChecked={val.value.value} ref={"video_" + val.key}>{val.key}</Checkbox>
-                            );
-                          case "select":
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl componentClass="select" placeholder="select" ref={"video_" + val.key}>
-                                  {val.value.values.map((item, i) => {
-                                    if(item == val.value.value) {
-                                      return <option value={i} key={i} selected>{item}</option>
-                                    }
-                                    else {
-                                      return <option value={i} key={i}>{item}</option>
-                                    }
-                                  })}
-                                </FormControl>
-                              </div>
-                            );
-                          case "textarea":
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl componentClass="textarea" placeholder={val.key} defaultValue={val.value.value} ref={"video_" + val.key}/>
-                              </div>
-                            );
-                          default:
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl type={val.value.type} defaultValue={val.value.value} placeholder={val.key} ref={"video_" + val.key}/>
-                              </div>
-                            );
-                          }
-                        })}
-                      </div>);
-                  })()
-                }
-              </Col>
-            </FormGroup>
-            <FormGroup controlId="formControlsSelect">
-              <ControlLabel>Audio Codec</ControlLabel>
-              <FormControl componentClass="select" placeholder="select" onChange={this._changeAudioCodec}>
-              {
-                codecsInfo.audio.map((val, i) => {
-                  if(i == this.state.audioCodec) {
-                    return <option value={i} key={i} selected>{val.name}</option>
-                  }
-                  else {
-                    return <option value={i} key={i}>{val.name}</option>
-                  }
-                })
-              }
-              </FormControl>
-              <Col smOffset={1}>
-                {
-                  (() => {
-                    var codec:{[any:string]:any} = codecsInfo.audio[this.state.audioCodec];
-                    var components = [];
-                    if(!codec) {
-                      return <div/>;
-                    }
-                    Object.keys(codec).forEach((key) => {
-                      if(codec[key]["type"] != undefined) {
-                        components.push({key:key, value:codec[key]}); 
-                      }
-                    });
-                    return (
-                      <div>
-                        {components.map((val, i) => {
-                          switch(val.value.type) {
-                          case "checkbox":
-                            return (
-                              <Checkbox defaultChecked={val.value.value} ref={"audio_" + val.key}>{val.key}</Checkbox>
-                            );
-                          case "select":
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl componentClass="select" placeholder="select" ref={"audio_" + val.key}>
-                                  {val.value.values.map((item, i) => {
-                                    if(item == val.value.value) {
-                                      return <option value={i} key={i} selected>{item}</option>
-                                    }
-                                    else {
-                                      return <option value={i} key={i}>{item}</option>
-                                    }
-                                  })}
-                                </FormControl>
-                              </div>
-                            );
-                          case "textarea":
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl componentClass="textarea" placeholder={val.key} defaultValue={val.value.value} ref={"audio_" + val.key}/>
-                              </div>
-                            );
-                          default:
-                            return (
-                              <div>
-                                <ControlLabel>{val.key}</ControlLabel>
-                                <FormControl type={val.value.type} defaultValue={val.value.value} placeholder={val.key} ref={"audio_" + val.key}/>
-                              </div>
-                            );
-                          }
-                        })}
-                      </div>);
-                  })()
-                }
-              </Col>
-            </FormGroup>
+            <CodecSetting ref="videoCodec" title="Video Codec" codecList={codecsInfo.video} codec={targetInfo.video}/>
+            <CodecSetting ref="audioCodec" title="Audio Codec" codecList={codecsInfo.audio} codec={targetInfo.audio}/>
             </Form>
           </Modal.Body>
           <Modal.Footer>

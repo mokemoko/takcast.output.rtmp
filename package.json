@@ -9,8 +9,7 @@
   "author": "taktod",
   "license": "BSD-3-Clause",
   "dependencies": {
-    "ttlibjs_next2": "github:taktod/ttLibJs_next2",
-    "ttlibjsgyp2": "github:taktod/ttLibJsGyp2"
+    "ttlibjs_next2": "github:taktod/ttLibJs_next2"
   },
   "devDependencies": {
     "@types/electron": "^1.4.38",
