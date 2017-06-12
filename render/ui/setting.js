@@ -27,6 +27,19 @@ var Checkbox = ReactBootstrap.Checkbox;
 exports.setting = function (rtmp) {
     var codecsInfo = rtmp._refCodecsInfo();
     var targetInfo = rtmp._refTargetInfo();
+    codecsInfo.audio.forEach(function (codec) {
+        var audio = targetInfo.audio;
+        if (codec.name == audio.name
+            && codec.codec == audio.codec) {
+            // これが見つけるべきやつ。
+            Object.keys(codec).forEach(function (key) {
+                if (codec[key]["type"] != undefined) {
+                    codec[key]["value"] = audio[key];
+                }
+            });
+        }
+    });
+    // ここでやればいいか・・・
     var CodecSetting = (function (_super) {
         __extends(CodecSetting, _super);
         function CodecSetting() {
@@ -45,16 +58,33 @@ exports.setting = function (rtmp) {
             this.props.codecList.forEach(function (codec) {
                 if (codec.name == _this.props.codec.name
                     && codec.codec == _this.props.codec.codec) {
+                    _this._updateData(codec, _this.props.codec);
                     _this.setState({ codec: i });
                 }
                 ++i;
             });
         };
+        CodecSetting.prototype._updateData = function (codec, target) {
+            var _this = this;
+            var setData = function (target, ref, value) {
+                switch (target) {
+                    case "checkbox":
+                        return ReactDOM.findDOMNode(ref).getElementsByTagName("input")[0].checked = value;
+                    case "select":
+                        var r = ReactDOM.findDOMNode(ref);
+                        return r.children[r.value].innerText = value;
+                    default:
+                        return ReactDOM.findDOMNode(ref).value = value;
+                }
+            };
+            Object.keys(codec).forEach(function (key) {
+                if (codec[key]["type"] != undefined) {
+                    setData(codec[key]["type"], _this.refs[key], target[key]);
+                }
+            });
+        };
         CodecSetting.prototype.getData = function () {
             var _this = this;
-            if (this.props.codecList.length == 0) {
-                return null;
-            }
             var getData = function (target, ref) {
                 switch (target) {
                     case "checkbox":
@@ -66,6 +96,9 @@ exports.setting = function (rtmp) {
                         return ReactDOM.findDOMNode(ref).value;
                 }
             };
+            if (this.props.codecList.length == 0) {
+                return null;
+            }
             var codec = {};
             var targetCodec = this.props.codecList[this.state.codec];
             Object.keys(targetCodec).forEach(function (key) {
@@ -107,6 +140,7 @@ exports.setting = function (rtmp) {
                     }
                 })),
                 React.createElement(Col, { smOffset: 1 }, /* あとは要素に従って表示していけばOKだが・・・ */ this.targetComponents.map(function (val, i) {
+                    console.log(val);
                     switch (val.value.type) {
                         case "checkbox":
                             return (React.createElement(Checkbox, { defaultChecked: val.value.value, ref: val.key }, val.key));
@@ -128,7 +162,7 @@ exports.setting = function (rtmp) {
                         default:
                             return (React.createElement("div", null,
                                 React.createElement(ControlLabel, null, val.key),
-                                React.createElement(FormControl, { type: val.value.type, defaultValue: val.value.value, placeholder: val.key, ref: val.key })));
+                                React.createElement(FormControl, { type: val.value.type, placeholder: val.codec + val.key, defaultValue: val.value.value, ref: val.key })));
                     }
                 }))));
         };

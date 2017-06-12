@@ -39,7 +39,7 @@ var Rtmp = (function () {
                     channelNum: 1,
                     sampleRate: 44100,
                     type: "aac",
-                    bitrate: { type: "number", value: 96000, values: 96000 } // jsonになっているものは、ダイアログで選択可能になるもの
+                    bitrate: { type: "number", value: 95000, values: 94000 } // jsonになっているものは、ダイアログで選択可能になるもの
                 });
             }
             if (ttg.encoder.VtCompressSessionEncoder.enabled) {
@@ -308,6 +308,8 @@ var Rtmp = (function () {
         this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
         this.ns = null;
         this.nc = null;
+        this.aacEncoder = null;
+        this.h264Encoder = null;
     };
     return Rtmp;
 }());
