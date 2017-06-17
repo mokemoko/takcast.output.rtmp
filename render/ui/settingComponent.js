@@ -55,6 +55,9 @@ exports.settingComponent = function (rtmp) {
         SettingComponent.prototype.onUpdate = function (info) {
             this.setState({ setting: info.address + " " + info.streamName });
         };
+        SettingComponent.prototype.onStop = function () {
+            this.setState({ sending: false });
+        };
         SettingComponent.prototype.render = function () {
             return (React.createElement("div", null,
                 React.createElement(Navbar.Text, null,

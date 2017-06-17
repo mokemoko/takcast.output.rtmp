@@ -47,6 +47,9 @@ export var settingComponent = (rtmp:Rtmp):any => {
     public onUpdate(info:{address:string, streamName:string, audio:any, video:any}) {
       this.setState({setting: info.address + " " + info.streamName});
     }
+    public onStop() {
+      this.setState({sending:false});
+    }
     public render() {
       return (
         <div>

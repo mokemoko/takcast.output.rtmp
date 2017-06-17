@@ -47,6 +47,13 @@ var Rtmp = (function () {
                 _this.eventTarget.onUpdate(_this.targetInfo);
             }
         });
+        ipcRenderer.on(this.name + "close", function () {
+            // サーバーとの通信がなんらかの原因でおわったときのイベント
+            if (_this.eventTarget != null) {
+                _this.eventTarget.onStop(); // 停止したことを通知しておく
+            }
+            // このタイミングで停止を実施しなければならない。
+        });
         ipcRenderer.send(this.name + "init");
     };
     /**
@@ -168,9 +175,6 @@ var Rtmp = (function () {
             this.timerId = null;
         }
         ipcRenderer.send(this.name + "stop");
-    };
-    Rtmp.prototype.MacOS = function () {
-        console.log("MacOS is called");
     };
     return Rtmp;
 }());

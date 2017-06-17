@@ -19,6 +19,7 @@ export class Rtmp implements IPlugin {
   // rtmp接続用
   private nc:ttg.rtmp.NetConnection;
   private ns:ttg.rtmp.NetStream;
+  private isPublishing:boolean;
   // 実際に配信するときに利用するcodec情報
   private audioCodec:any;
   private videoCodec:any;
@@ -46,6 +47,7 @@ export class Rtmp implements IPlugin {
     this.subType = "planar";
     this.audioCodecs = [];
     this.videoCodecs = [];
+    this.isPublishing = false;
     // 1.codecListの配列に追加したいものを書いておく
     this.codecList = ["MacOS","Windows","Faac","Openh264","X264"];
   }
@@ -200,14 +202,45 @@ export class Rtmp implements IPlugin {
       }
     }
     else {
+      // このタイミングでparamsとspatialArrayをちゃんとした形に復元しないといけない。
+      // とりあえずparamsをparseするか・・・
+      var param = {};
+      var spatialParamArray = [{}];
+      try {
+        var jobj = JSON.parse(target.param);
+        if(jobj instanceof Object) {
+          param = jobj;
+        }
+      }
+      catch(e) {
+      }
+      try {
+        var jobj = JSON.parse(target.spatialParamArray);
+        var isOk = true;
+        if(jobj instanceof Array) {
+          jobj.forEach((ele) => {
+            if(!(ele instanceof Object)) {
+              isOk = false;
+            }
+          });
+        }
+        else {
+          isOk = false;
+        }
+        if(isOk) {
+          spatialParamArray = jobj;
+        }
+      }
+      catch(e) {
+      }
       this.videoCodec = target;
       this.subType = "planar";
       this.uvStride = target.width / 2;
       this.h264Encoder = new ttg.encoder.Openh264Encoder(
         this.videoCodec.width,
         this.videoCodec.height,
-        {},
-        [{}]);
+        param,
+        spatialParamArray);
     }
   }
   private X264(target) {
@@ -228,6 +261,15 @@ export class Rtmp implements IPlugin {
       }
     }
     else {
+      var params = {};
+      try {
+        var jobj = JSON.parse(target.params);
+        if(jobj instanceof Object) {
+          params = jobj;
+        }
+      }
+      catch(e) {
+      }
       this.videoCodec = target;
       this.subType = "planar";
       this.uvStride = target.width / 2;
@@ -237,7 +279,7 @@ export class Rtmp implements IPlugin {
         this.videoCodec.preset,
         this.videoCodec.tune,
         this.videoCodec.profile,
-        {});
+        params);
     }
   }
   /**
@@ -274,6 +316,10 @@ export class Rtmp implements IPlugin {
     });
     ipcMain.on(this.name + "yuv", (event:Electron.IpcMainEvent, args:any) => {
       if(this.h264Encoder == null) {
+        if(this.isPublishing) {
+          this.isPublishing = false;
+          event.sender.send(this.name + "close", {});
+        }
         return;
       }
       if(args[0] instanceof Buffer) {
@@ -282,6 +328,10 @@ export class Rtmp implements IPlugin {
     });
     ipcMain.on(this.name + "pcm", (event:Electron.IpcMainEvent, args:any) => {
       if(this.aacEncoder == null) {
+        if(this.isPublishing) {
+          this.isPublishing = false;
+          event.sender.send(this.name + "close", {});
+        }
         return;
       }
       if(args[0] instanceof Buffer) {
@@ -345,25 +395,39 @@ export class Rtmp implements IPlugin {
     writeFile("rtmp.json", JSON.stringify(args), () => {});
     this.nc = new ttg.rtmp.NetConnection();
     this.nc.on("onStatusEvent", (event:any) => {
-      if(event.info.code == "NetConnection.Connect.Success") {
+      switch(event.info.code) {
+      case "NetConnection.Connect.Success":
         // netStreamもつくっておく必要がある。
         this.ns = new ttg.rtmp.NetStream(this.nc);
         this.ns.on("onStatusEvent", (event) => {
           // 一応メモっておく
-          console.log(event.info.code);
           if(event.info.code == "NetStream.Publish.Start") {
+            this.isPublishing = true;
             this[args.audio.codec](args.audio);
             this[args.video.codec](args.video);
           }
         });
         this.ns.publish(args.streamName);
+        break;
+      case "NetConnection.Connect.Failed":
+        // エラーが発生して切断した場合
+        this.ns = null;
+        this._stop();
+        break;
+      case "NetConnection.Connect.Closed":
+        break;
+      default:
+        break;
       }
     });
     this.nc.connect(args.address);
   }
   private _stop() {
-    this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
-    this.ns = null;
+    if(this.ns != null) {
+      this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
+      this.isPublishing = false;
+      this.ns = null;
+    }
     this.nc = null;
     this.aacEncoder = null;
     this.h264Encoder = null;
@@ -371,3 +435,30 @@ export class Rtmp implements IPlugin {
 }
 
 export var _ = new Rtmp();
+
+/*
+{
+"open-gop":1,
+"threads":1,
+"merange":16,
+"qcomp":0.6,
+"ip-factor": 0.71,
+"bitrate":300,
+"qp":21,
+"crf":23,
+"crf-max":23,
+"fps":"30/1",
+"keyint":150,
+"keyint-min":150,
+"bframes":3,
+"vbv-maxrate":0,
+"vbv-bufsize":1024,
+"qp-max":40,
+"qp-min": 21,
+"qp-step": 4
+}
+
+なるほど・・・このやり方だと、encoderが生成される前にcallがくる可能性がちょっとだけ存在するのか・・・
+あとエラー時に転送がきちんとクリアされるという保証もないため、データがかぶって壊れることもありうるわけか・・・
+
+*/

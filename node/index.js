@@ -23,6 +23,7 @@ var Rtmp = (function () {
         this.subType = "planar";
         this.audioCodecs = [];
         this.videoCodecs = [];
+        this.isPublishing = false;
         // 1.codecListの配列に追加したいものを書いておく
         this.codecList = ["MacOS", "Windows", "Faac", "Openh264", "X264"];
     }
@@ -157,10 +158,41 @@ var Rtmp = (function () {
             }
         }
         else {
+            // このタイミングでparamsとspatialArrayをちゃんとした形に復元しないといけない。
+            // とりあえずparamsをparseするか・・・
+            var param = {};
+            var spatialParamArray = [{}];
+            try {
+                var jobj = JSON.parse(target.param);
+                if (jobj instanceof Object) {
+                    param = jobj;
+                }
+            }
+            catch (e) {
+            }
+            try {
+                var jobj = JSON.parse(target.spatialParamArray);
+                var isOk = true;
+                if (jobj instanceof Array) {
+                    jobj.forEach(function (ele) {
+                        if (!(ele instanceof Object)) {
+                            isOk = false;
+                        }
+                    });
+                }
+                else {
+                    isOk = false;
+                }
+                if (isOk) {
+                    spatialParamArray = jobj;
+                }
+            }
+            catch (e) {
+            }
             this.videoCodec = target;
             this.subType = "planar";
             this.uvStride = target.width / 2;
-            this.h264Encoder = new ttg.encoder.Openh264Encoder(this.videoCodec.width, this.videoCodec.height, {}, [{}]);
+            this.h264Encoder = new ttg.encoder.Openh264Encoder(this.videoCodec.width, this.videoCodec.height, param, spatialParamArray);
         }
     };
     Rtmp.prototype.X264 = function (target) {
@@ -181,10 +213,19 @@ var Rtmp = (function () {
             }
         }
         else {
+            var params = {};
+            try {
+                var jobj = JSON.parse(target.params);
+                if (jobj instanceof Object) {
+                    params = jobj;
+                }
+            }
+            catch (e) {
+            }
             this.videoCodec = target;
             this.subType = "planar";
             this.uvStride = target.width / 2;
-            this.h264Encoder = new ttg.encoder.X264Encoder(this.videoCodec.width, this.videoCodec.height, this.videoCodec.preset, this.videoCodec.tune, this.videoCodec.profile, {});
+            this.h264Encoder = new ttg.encoder.X264Encoder(this.videoCodec.width, this.videoCodec.height, this.videoCodec.preset, this.videoCodec.tune, this.videoCodec.profile, params);
         }
     };
     /**
@@ -222,6 +263,10 @@ var Rtmp = (function () {
         });
         electron_1.ipcMain.on(this.name + "yuv", function (event, args) {
             if (_this.h264Encoder == null) {
+                if (_this.isPublishing) {
+                    _this.isPublishing = false;
+                    event.sender.send(_this.name + "close", {});
+                }
                 return;
             }
             if (args[0] instanceof Buffer) {
@@ -230,6 +275,10 @@ var Rtmp = (function () {
         });
         electron_1.ipcMain.on(this.name + "pcm", function (event, args) {
             if (_this.aacEncoder == null) {
+                if (_this.isPublishing) {
+                    _this.isPublishing = false;
+                    event.sender.send(_this.name + "close", {});
+                }
                 return;
             }
             if (args[0] instanceof Buffer) {
@@ -288,25 +337,39 @@ var Rtmp = (function () {
         fs_1.writeFile("rtmp.json", JSON.stringify(args), function () { });
         this.nc = new ttg.rtmp.NetConnection();
         this.nc.on("onStatusEvent", function (event) {
-            if (event.info.code == "NetConnection.Connect.Success") {
-                // netStreamもつくっておく必要がある。
-                _this.ns = new ttg.rtmp.NetStream(_this.nc);
-                _this.ns.on("onStatusEvent", function (event) {
-                    // 一応メモっておく
-                    console.log(event.info.code);
-                    if (event.info.code == "NetStream.Publish.Start") {
-                        _this[args.audio.codec](args.audio);
-                        _this[args.video.codec](args.video);
-                    }
-                });
-                _this.ns.publish(args.streamName);
+            switch (event.info.code) {
+                case "NetConnection.Connect.Success":
+                    // netStreamもつくっておく必要がある。
+                    _this.ns = new ttg.rtmp.NetStream(_this.nc);
+                    _this.ns.on("onStatusEvent", function (event) {
+                        // 一応メモっておく
+                        if (event.info.code == "NetStream.Publish.Start") {
+                            _this.isPublishing = true;
+                            _this[args.audio.codec](args.audio);
+                            _this[args.video.codec](args.video);
+                        }
+                    });
+                    _this.ns.publish(args.streamName);
+                    break;
+                case "NetConnection.Connect.Failed":
+                    // エラーが発生して切断した場合
+                    _this.ns = null;
+                    _this._stop();
+                    break;
+                case "NetConnection.Connect.Closed":
+                    break;
+                default:
+                    break;
             }
         });
         this.nc.connect(args.address);
     };
     Rtmp.prototype._stop = function () {
-        this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
-        this.ns = null;
+        if (this.ns != null) {
+            this.ns.close(); // streamCloseを実施してから、netConnectionを落とす。そうすることで再度配信したときにNetStream.Publish.BadNameがでないようにする
+            this.isPublishing = false;
+            this.ns = null;
+        }
         this.nc = null;
         this.aacEncoder = null;
         this.h264Encoder = null;
@@ -315,3 +378,29 @@ var Rtmp = (function () {
 }());
 exports.Rtmp = Rtmp;
 exports._ = new Rtmp();
+/*
+{
+"open-gop":1,
+"threads":1,
+"merange":16,
+"qcomp":0.6,
+"ip-factor": 0.71,
+"bitrate":300,
+"qp":21,
+"crf":23,
+"crf-max":23,
+"fps":"30/1",
+"keyint":150,
+"keyint-min":150,
+"bframes":3,
+"vbv-maxrate":0,
+"vbv-bufsize":1024,
+"qp-max":40,
+"qp-min": 21,
+"qp-step": 4
+}
+
+なるほど・・・このやり方だと、encoderが生成される前にcallがくる可能性がちょっとだけ存在するのか・・・
+あとエラー時に転送がきちんとクリアされるという保証もないため、データがかぶって壊れることもありうるわけか・・・
+
+*/ 

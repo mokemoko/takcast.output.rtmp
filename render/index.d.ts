@@ -10,6 +10,7 @@ export interface RtmpEventListener {
         audio: any;
         video: any;
     }): any;
+    onStop(): any;
 }
 export declare class Rtmp implements IOutputPlugin {
     name: string;
@@ -81,6 +82,5 @@ export declare class Rtmp implements IOutputPlugin {
      */
     _publish(): boolean;
     _stop(): void;
-    private MacOS();
 }
 export declare var _: Rtmp;

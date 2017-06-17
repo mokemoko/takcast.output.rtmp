@@ -7,6 +7,7 @@ export declare class Rtmp implements IPlugin {
     private codecList;
     private nc;
     private ns;
+    private isPublishing;
     private audioCodec;
     private videoCodec;
     private h264Encoder;

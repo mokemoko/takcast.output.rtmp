@@ -15,6 +15,7 @@ var ipcRenderer = electron.ipcRenderer;
 
 export interface RtmpEventListener {
   onUpdate(info:{address:string, streamName:string, audio:any, video:any});
+  onStop();
 }
 
 export class Rtmp implements IOutputPlugin {
@@ -69,6 +70,13 @@ export class Rtmp implements IOutputPlugin {
       if(this.eventTarget != null) {
         this.eventTarget.onUpdate(this.targetInfo);
       }
+    });
+    ipcRenderer.on(this.name + "close", () => {
+      // サーバーとの通信がなんらかの原因でおわったときのイベント
+      if(this.eventTarget != null) {
+        this.eventTarget.onStop(); // 停止したことを通知しておく
+      }
+      // このタイミングで停止を実施しなければならない。
     });
     ipcRenderer.send(this.name + "init");
   }
@@ -191,9 +199,6 @@ export class Rtmp implements IOutputPlugin {
       this.timerId = null;
     }
     ipcRenderer.send(this.name + "stop");
-  }
-  private MacOS() {
-    console.log("MacOS is called");
   }
 }
 
