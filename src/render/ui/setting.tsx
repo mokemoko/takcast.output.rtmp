@@ -19,23 +19,6 @@ var Checkbox = ReactBootstrap.Checkbox;
 export var setting = (rtmp:Rtmp) => {
   var codecsInfo = rtmp._refCodecsInfo();
   var targetInfo = rtmp._refTargetInfo();
-  /*
-  codecsInfo.audio.forEach((codec) => {
-    var audio = targetInfo.audio;
-    if(audio == null) {
-      return;
-    }
-    if(codec.name == audio.name
-    && codec.codec == audio.codec) {
-      // これが見つけるべきやつ。
-      Object.keys(codec).forEach((key) => {
-        if(codec[key]["type"] != undefined) {
-          codec[key]["value"] = audio[key];
-        }
-      });
-    }
-  });
-  */
   // ここでやればいいか・・・
   class CodecSetting extends React.Component<{title:string,codecList:any[],codec:any}, {}> {
     state = {codec: 0}
@@ -72,11 +55,14 @@ export var setting = (rtmp:Rtmp) => {
           return (ReactDOM.findDOMNode(ref) as any).value = value;
         }
       }
-      Object.keys(codec).forEach((key) => {
-        if(codec[key]["type"] != undefined) {
-          setData(codec[key]["type"], this.refs[key], target[key]);
-        }
-      });
+      setTimeout(() => {
+        Object.keys(codec).forEach((key) => {
+          if(codec[key]["type"] != undefined
+          && this.refs[key] != undefined) {
+            setData(codec[key]["type"], this.refs[key], target[key]);
+          }
+        });
+      }, 100);
     }
     public getData() {
       var getData = (target, ref) => {
