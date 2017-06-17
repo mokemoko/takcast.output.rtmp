@@ -19,8 +19,12 @@ var Checkbox = ReactBootstrap.Checkbox;
 export var setting = (rtmp:Rtmp) => {
   var codecsInfo = rtmp._refCodecsInfo();
   var targetInfo = rtmp._refTargetInfo();
+  /*
   codecsInfo.audio.forEach((codec) => {
     var audio = targetInfo.audio;
+    if(audio == null) {
+      return;
+    }
     if(codec.name == audio.name
     && codec.codec == audio.codec) {
       // これが見つけるべきやつ。
@@ -31,6 +35,7 @@ export var setting = (rtmp:Rtmp) => {
       });
     }
   });
+  */
   // ここでやればいいか・・・
   class CodecSetting extends React.Component<{title:string,codecList:any[],codec:any}, {}> {
     state = {codec: 0}
@@ -46,7 +51,8 @@ export var setting = (rtmp:Rtmp) => {
     public componentDidMount() {
       var i = 0;
       this.props.codecList.forEach((codec) => {
-        if(codec.name == this.props.codec.name
+        if(this.props.codec != null
+        && codec.name == this.props.codec.name
         && codec.codec == this.props.codec.codec) {
           this._updateData(codec, this.props.codec);
           this.setState({codec: i});

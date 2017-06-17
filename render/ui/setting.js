@@ -27,18 +27,23 @@ var Checkbox = ReactBootstrap.Checkbox;
 exports.setting = function (rtmp) {
     var codecsInfo = rtmp._refCodecsInfo();
     var targetInfo = rtmp._refTargetInfo();
-    codecsInfo.audio.forEach(function (codec) {
-        var audio = targetInfo.audio;
-        if (codec.name == audio.name
-            && codec.codec == audio.codec) {
-            // これが見つけるべきやつ。
-            Object.keys(codec).forEach(function (key) {
-                if (codec[key]["type"] != undefined) {
-                    codec[key]["value"] = audio[key];
-                }
-            });
-        }
+    /*
+    codecsInfo.audio.forEach((codec) => {
+      var audio = targetInfo.audio;
+      if(audio == null) {
+        return;
+      }
+      if(codec.name == audio.name
+      && codec.codec == audio.codec) {
+        // これが見つけるべきやつ。
+        Object.keys(codec).forEach((key) => {
+          if(codec[key]["type"] != undefined) {
+            codec[key]["value"] = audio[key];
+          }
+        });
+      }
     });
+    */
     // ここでやればいいか・・・
     var CodecSetting = (function (_super) {
         __extends(CodecSetting, _super);
@@ -56,7 +61,8 @@ exports.setting = function (rtmp) {
             var _this = this;
             var i = 0;
             this.props.codecList.forEach(function (codec) {
-                if (codec.name == _this.props.codec.name
+                if (_this.props.codec != null
+                    && codec.name == _this.props.codec.name
                     && codec.codec == _this.props.codec.codec) {
                     _this._updateData(codec, _this.props.codec);
                     _this.setState({ codec: i });
