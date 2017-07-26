@@ -295,7 +295,7 @@ export class Rtmp implements IPlugin {
       }
     });
     // 初期設定つくっておく必要がある。
-    ipcMain.on(this.name + "init", (event:Electron.IpcMainEvent, args: any) => {
+    ipcMain.on(this.name + "init", (event:any, args: any) => {
       // 初期化したときの動作
       // encoderの情報を送っておく
       var publishInfo = null;
@@ -310,11 +310,11 @@ export class Rtmp implements IPlugin {
       },
       publishInfo]);
     });
-    ipcMain.on(this.name + "publish", (event:Electron.IpcMainEvent, args:any) => {
+    ipcMain.on(this.name + "publish", (event:any, args:any) => {
       // アドレスからrtmpの接続を作成して
       this._publish(args);
     });
-    ipcMain.on(this.name + "yuv", (event:Electron.IpcMainEvent, args:any) => {
+    ipcMain.on(this.name + "yuv", (event:any, args:any) => {
       if(this.h264Encoder == null) {
         if(this.isPublishing) {
           this.isPublishing = false;
@@ -326,7 +326,7 @@ export class Rtmp implements IPlugin {
         this._yuv(args[0] as Buffer, args[1]);
       }
     });
-    ipcMain.on(this.name + "pcm", (event:Electron.IpcMainEvent, args:any) => {
+    ipcMain.on(this.name + "pcm", (event:any, args:any) => {
       if(this.aacEncoder == null) {
         if(this.isPublishing) {
           this.isPublishing = false;
@@ -338,7 +338,7 @@ export class Rtmp implements IPlugin {
         this._pcm(args[0] as Buffer, args[1]);
       }
     });
-    ipcMain.on(this.name + "stop", (event:Electron.IpcMainEvent, args:any) => {
+    ipcMain.on(this.name + "stop", (event:any, args:any) => {
       this._stop();
     });
   }

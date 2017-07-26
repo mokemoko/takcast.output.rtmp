@@ -56,7 +56,7 @@ export class Rtmp implements IOutputPlugin {
     // 基本pluginを保持
     this.basePlugin = plugins["base"][0] as IBasePlugin;
     // node側に初期化を送って、codecの情報をもらう
-    ipcRenderer.on(this.name + "init", (e:Electron.IpcRendererEvent, args:any) => {
+    ipcRenderer.on(this.name + "init", (e:any, args:any) => {
       this.codecsInfo = args[0];
       this.targetInfo = args[1];
       if(this.targetInfo == null) {
