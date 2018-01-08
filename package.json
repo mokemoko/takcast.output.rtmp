@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^7.0.27",
+    "@types/react": "^16.0.34",
     "electron": "1.6.11",
     "takcast.interface": "github:taktod/takcast.interface",
     "typescript": "^2.3.4"
