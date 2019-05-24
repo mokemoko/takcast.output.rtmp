@@ -1,10 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var electron = require("electron");
-var settingComponent_1 = require("./ui/settingComponent");
-var setting_1 = require("./ui/setting");
+var electron_1 = require("electron");
 var tt = require("ttlibjs_next2");
-var ipcRenderer = electron.ipcRenderer;
 var Rtmp = (function () {
     /**
      * コンストラクタ
@@ -32,7 +29,7 @@ var Rtmp = (function () {
         // 基本pluginを保持
         this.basePlugin = plugins["base"][0];
         // node側に初期化を送って、codecの情報をもらう
-        ipcRenderer.on(this.name + "init", function (e, args) {
+        electron_1.ipcRenderer.on(this.name + "init", function (e, args) {
             _this.codecsInfo = args[0];
             _this.targetInfo = args[1];
             if (_this.targetInfo == null) {
@@ -47,20 +44,22 @@ var Rtmp = (function () {
                 _this.eventTarget.onUpdate(_this.targetInfo);
             }
         });
-        ipcRenderer.on(this.name + "close", function () {
+        electron_1.ipcRenderer.on(this.name + "close", function () {
             // サーバーとの通信がなんらかの原因でおわったときのイベント
             if (_this.eventTarget != null) {
                 _this.eventTarget.onStop(); // 停止したことを通知しておく
             }
             // このタイミングで停止を実施しなければならない。
         });
-        ipcRenderer.send(this.name + "init");
+        electron_1.ipcRenderer.send(this.name + "init");
     };
     /**
      * 下部の設定コンポーネントを参照
      */
     Rtmp.prototype.refSettingComponent = function () {
-        return settingComponent_1.settingComponent(this);
+        // コンポーネントはないため空で返しておく
+        // TODO: IOutputPluginの定義自体の修正
+        return null;
     };
     /**
      * node側からもらった利用可能なコーデック情報を参照する
@@ -70,13 +69,6 @@ var Rtmp = (function () {
     };
     Rtmp.prototype._refTargetInfo = function () {
         return this.targetInfo;
-    };
-    /**
-     * 設定ダイアログを開く
-     * rtmpアドレスやコーデック設定等が実施できる
-     */
-    Rtmp.prototype._openSetting = function () {
-        setting_1.setting(this);
     };
     /**
      * 配信設定をセットする
@@ -112,6 +104,10 @@ var Rtmp = (function () {
      */
     Rtmp.prototype._publish = function () {
         var _this = this;
+        if (this.timerId != null) {
+            // 既に配信中の場合は何もしない
+            return false;
+        }
         // 配信開始
         if (this.targetInfo == null) {
             alert("接続先設定がありません。");
@@ -131,13 +127,13 @@ var Rtmp = (function () {
         this.targetInfo.audio.sampleRate = this.basePlugin.refAudioContext().sampleRate;
         this.targetInfo.audio.channelNum = 1;
         // 配信情報をnode側に送信する
-        ipcRenderer.send(this.name + "publish", this.targetInfo);
+        electron_1.ipcRenderer.send(this.name + "publish", this.targetInfo);
         this.pts = 0; // ptsを初期化する
         // yuvイメージデータを取得する
         var array = new Uint8Array(canvas.width * canvas.height * 3 / 2);
         var draw = function () {
             capture.drain(canvas, array);
-            ipcRenderer.send(_this.name + "yuv", [array, _this.pts]);
+            electron_1.ipcRenderer.send(_this.name + "yuv", [array, _this.pts]);
         };
         this.timerId = setInterval(draw, 1000 / 15);
         // pcm音声データを取得する
@@ -156,7 +152,7 @@ var Rtmp = (function () {
                 }
                 pcm[i] = val;
             }
-            ipcRenderer.send(_this.name + "pcm", [new Uint8Array(pcm.buffer), _this.pts]);
+            electron_1.ipcRenderer.send(_this.name + "pcm", [new Uint8Array(pcm.buffer), _this.pts]);
             _this.pts += length;
         };
         this.scriptNode.connect(this.basePlugin.refDevnullNode());
@@ -174,7 +170,7 @@ var Rtmp = (function () {
             clearInterval(this.timerId);
             this.timerId = null;
         }
-        ipcRenderer.send(this.name + "stop");
+        electron_1.ipcRenderer.send(this.name + "stop");
     };
     return Rtmp;
 }());

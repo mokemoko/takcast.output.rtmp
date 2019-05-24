@@ -286,7 +286,7 @@ export class Rtmp implements IPlugin {
    * 他のプラグイン読み込み完了時にcallされるplugin設定動作
    * とりあえず他のプラグインとの連携はない
    * 全体のプラグインの読み込みが完了したあとにcallされるので初期化動作として使っておく
-   * @param plugins 
+   * @param plugins
    */
   public setPlugins(plugins:{[key:string]:Array<IPlugin>}):void {
     this.codecList.forEach((codec) => {
@@ -344,7 +344,7 @@ export class Rtmp implements IPlugin {
   }
   private _yuv(buffer:Buffer, pts:number) {
     var frame = ttg.Frame.fromBinaryBuffer(
-      this.yuvFrame, 
+      this.yuvFrame,
       buffer,
       {
         type: "yuv",

@@ -1,5 +1,4 @@
 /// <reference types="react" />
-import * as React from "react";
 import { IPlugin } from "takcast.interface";
 import { IOutputPlugin } from "takcast.interface";
 import { IMediaPlugin } from "takcast.interface";
@@ -52,11 +51,6 @@ export declare class Rtmp implements IOutputPlugin {
         audio: any;
         video: any;
     };
-    /**
-     * 設定ダイアログを開く
-     * rtmpアドレスやコーデック設定等が実施できる
-     */
-    _openSetting(): void;
     /**
      * 配信設定をセットする
      * 設定ダイアログの結果を保存する

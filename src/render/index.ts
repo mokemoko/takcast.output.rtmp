@@ -1,17 +1,11 @@
-import * as React from "react";
-
 import {IPlugin} from "takcast.interface";
 import {IOutputPlugin} from "takcast.interface";
 import {IMediaPlugin} from "takcast.interface";
 import {IBasePlugin} from "takcast.interface";
 
-import * as electron from "electron";
-
-import {settingComponent} from "./ui/settingComponent";
-import {setting} from "./ui/setting";
+import {ipcRenderer} from "electron";
 
 import * as tt from "ttlibjs_next2";
-var ipcRenderer = electron.ipcRenderer;
 
 export interface RtmpEventListener {
   onUpdate(info:{address:string, streamName:string, audio:any, video:any});
@@ -84,7 +78,9 @@ export class Rtmp implements IOutputPlugin {
    * 下部の設定コンポーネントを参照
    */
   public refSettingComponent():React.ComponentClass<{}> {
-    return settingComponent(this);
+    // コンポーネントはないため空で返しておく
+    // TODO: IOutputPluginの定義自体の修正
+    return null;
   }
   /**
    * node側からもらった利用可能なコーデック情報を参照する
@@ -96,16 +92,9 @@ export class Rtmp implements IOutputPlugin {
     return this.targetInfo;
   }
   /**
-   * 設定ダイアログを開く
-   * rtmpアドレスやコーデック設定等が実施できる
-   */
-  public _openSetting():void {
-    setting(this);
-  }
-  /**
    * 配信設定をセットする
    * 設定ダイアログの結果を保存する
-   * @param info 
+   * @param info
    */
   public _setInfo(info:{address:string, streamName:string, audio:any, video:any}):void {
     // 設定を受け取ったらfooterの部分のアドレス表示を更新しておきたいところ。
@@ -135,6 +124,11 @@ export class Rtmp implements IOutputPlugin {
    * 配信実行
    */
   public _publish():boolean {
+    if(this.timerId != null) {
+      // 既に配信中の場合は何もしない
+      return false;
+    }
+
     // 配信開始
     if(this.targetInfo == null) {
       alert("接続先設定がありません。");
